@@ -12,7 +12,6 @@ if filereadable(expand("~/.vimrc.plugs"))
   endif
   call plug#begin('~/.vim/plugged')
   source ~/.vimrc.plugs
-  source ~/.vimrc.plugs.local
   call plug#end()
 endif
 " ensure ftdetect et al work by including this after the Vundle stuff
@@ -124,3 +123,41 @@ if filereadable(expand("~/.vimrc.local"))
   " noremap! jj <ESC>
   source ~/.vimrc.local
 endif
+
+let g:syntastic_go_checkers = ['golint', 'govet', 'errcheck']
+let g:syntastic_mode_map = { 'mode': 'active', 'passive_filetypes': ['go'] }
+
+let g:gist_open_browser_after_post = 1
+let g:gist_post_private = 1
+
+set nocursorline " don't highlight current line
+
+" keyboard shortcuts
+inoremap jj <ESC>
+
+" highlight search
+"set hlsearch
+"nmap <leader>hl :let @/ = ""<CR>
+
+" Disambiguate ,a & ,t from the Align plugin, making them fast again.
+"
+" This section is here to prevent AlignMaps from adding a bunch of mappings
+" that interfere with the very-common ,a and ,t mappings. This will get run
+" at every startup to remove the AlignMaps for the *next* vim startup.
+"
+" If you do want the AlignMaps mappings, remove this section, remove
+" ~/.vim/bundle/Align, and re-run rake in maximum-awesome.
+function! s:RemoveConflictingAlignMaps()
+  if exists("g:loaded_AlignMapsPlugin")
+    AlignMapsClean
+  endif
+endfunction
+command! -nargs=0 RemoveConflictingAlignMaps call s:RemoveConflictingAlignMaps()
+silent! autocmd VimEnter * RemoveConflictingAlignMaps
+inoremap <C-e>  <esc>l
+let g:UltiSnipsExpandTrigger="<c-l>"
+let g:UltiSnipsJumpForwardTrigger="<c-j>"
+let g:UltiSnipsJumpBackwardTrigger="<c-k>"
+
+colorscheme evening
+set autoread
