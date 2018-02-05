@@ -45,7 +45,7 @@ set wildmode=longest,list,full
 " Enable basic mouse behavior such as resizing buffers.
 set mouse=a
 if exists('$TMUX')  " Support resizing in tmux
-  set ttymouse=xterm2
+  " set ttymouse=xterm2
 endif
 
 " keyboard shortcuts
@@ -163,6 +163,8 @@ set hidden
 let g:LanguageClient_serverCommands = {
     \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
     \ 'javascript': ['javascript-typescript-stdio'],
+    \ 'c': ['cquery', '--language-server', '--log-file=/tmp/cq.log'],
+    \ 'cxx': ['cquery', '--language-server', '--log-file=/tmp/cq.log'],
     \ }
 
 " \'go': ['go-langserver'],
