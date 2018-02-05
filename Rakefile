@@ -1,5 +1,3 @@
-ENV['HOMEBREW_CASK_OPTS'] = "--appdir=/Applications"
-
 def brew_install(package, *args)
   versions = `brew list #{package} --versions`
   options = args.last.is_a?(Hash) ? args.pop : {}
@@ -31,13 +29,6 @@ def install_github_bundle(user, package)
   end
 end
 
-def brew_cask_install(package, *options)
-  output = `brew cask info #{package}`
-  return unless output.include?('Not installed')
-
-  sh "brew cask install --binarydir=#{`brew --prefix`.chomp}/bin #{package} #{options.join ' '}"
-end
-
 def step(description)
   description = "-- #{description} "
   description = description.ljust(80, '-')
@@ -45,18 +36,6 @@ def step(description)
   puts "\e[32m#{description}\e[0m"
 end
 
-def app_path(name)
-  path = "/Applications/#{name}.app"
-  ["~#{path}", path].each do |full_path|
-    return full_path if File.directory?(full_path)
-  end
-
-  return nil
-end
-
-def app?(name)
-  return !app_path(name).nil?
-end
 
 def get_backup_path(path)
   number = 1
@@ -118,94 +97,6 @@ def unlink_file(original_filename, symlink_filename)
   end
 end
 
-namespace :install do
-  desc 'Update or Install Brew'
-  task :brew do
-    step 'Homebrew'
-    unless system('which brew > /dev/null || ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"')
-      raise "Homebrew must be installed before continuing."
-    end
-  end
-
-  desc 'Install Homebrew Cask'
-  task :brew_cask do
-    step 'Homebrew Cask'
-    system('brew untap phinze/cask') if system('brew tap | grep phinze/cask > /dev/null')
-    unless system('brew tap | grep caskroom/cask > /dev/null') || system('brew tap caskroom/cask')
-      abort "Failed to tap caskroom/cask in Homebrew."
-    end
-  end
-
-  desc 'Install The Silver Searcher'
-  task :the_silver_searcher do
-    step 'the_silver_searcher'
-    brew_install 'the_silver_searcher'
-  end
-
-  desc 'Install iTerm'
-  task :iterm do
-    step 'iterm2'
-    unless app? 'iTerm'
-      brew_cask_install 'iterm2'
-    end
-  end
-
-  desc 'Install ctags'
-  task :ctags do
-    step 'ctags'
-    brew_install 'ctags'
-  end
-
-  desc 'Install reattach-to-user-namespace'
-  task :reattach_to_user_namespace do
-    step 'reattach-to-user-namespace'
-    brew_install 'reattach-to-user-namespace'
-  end
-
-  desc 'Install tmux'
-  task :tmux do
-    step 'tmux'
-    # tmux copy-pipe function needs tmux >= 1.8
-    brew_install 'tmux', :requires => '>= 2.1'
-  end
-
-  desc 'Install MacVim'
-  task :macvim do
-    step 'MacVim'
-    unless app? 'MacVim'
-      brew_cask_install 'macvim'
-    end
-
-    bin_dir = File.expand_path('~/bin')
-    bin_vim = File.join(bin_dir, 'vim')
-    unless ENV['PATH'].split(':').include?(bin_dir)
-      puts 'Please add ~/bin to your PATH, e.g. run this command:'
-      puts
-      puts %{  echo 'export PATH="~/bin:$PATH"' >> ~/.bashrc}
-      puts
-      puts 'The exact command and file will vary by your shell and configuration.'
-      puts 'You may need to restart your shell.'
-    end
-
-    FileUtils.mkdir_p(bin_dir)
-    unless File.executable?(bin_vim)
-      File.open(bin_vim, 'w', 0744) do |io|
-        io << <<-SHELL
-#!/bin/bash
-exec /Applications/MacVim.app/Contents/MacOS/Vim "$@"
-        SHELL
-      end
-    end
-  end
-
-  desc 'Install Vundle'
-  task :vundle do
-    step 'vundle'
-    install_github_bundle 'VundleVim','Vundle.vim'
-    sh '~/bin/vim -c "PluginInstall!" -c "q" -c "q"'
-  end
-end
-
 def filemap(map)
   map.inject({}) do |result, (key, value)|
     result[File.expand_path(key)] = File.expand_path(value)
@@ -213,17 +104,27 @@ def filemap(map)
   end.freeze
 end
 
+DIRS_UNDER_HOME = [
+  '~/.config/nvim/',
+  '~/.local/share/nvim/site',
+]
 LINKED_FILES = filemap(
   'vim'           => '~/.vim',
   'tmux.conf'     => '~/.tmux.conf',
   'vimrc'         => '~/.vimrc',
-  'vimrc.plugs' => '~/.vimrc.plugs'
+  'vimrc.plugs' => '~/.vimrc.plugs',
+  'vim/autoload' => '~/.local/share/nvim/site/autoload',
+  '~/.vimrc'       => '~/.config/nvim/init.vim',
 )
 
+#ln -s ~/.vim/autoload ~/.local/share/nvim/site
 desc 'Install these config files.'
 task :install do
   # TODO install gem ctags?
   # TODO run gem ctags?
+  DIRS_UNDER_HOME.each do |dir|
+    FileUtils.mkdir_p(File.expand_path(dir))
+  end
   step 'symlink'
   LINKED_FILES.each do |orig, link|
     link_file orig, link
@@ -233,32 +134,10 @@ end
 desc 'Uninstall these config files.'
 task :uninstall do
   step 'un-symlink'
-
   # un-symlink files that still point to the installed locations
   LINKED_FILES.each do |orig, link|
     unlink_file orig, link
   end
-
-  # delete unchanged copied files
-  COPIED_FILES.each do |orig, copy|
-    rm_f copy, :verbose => true if File.read(orig) == File.read(copy)
-  end
-
-  step 'homebrew'
-  puts
-  puts 'Manually uninstall homebrew if you wish: https://gist.github.com/mxcl/1173223.'
-
-  step 'iterm2'
-  puts
-  puts 'Run this to uninstall iTerm:'
-  puts
-  puts '  rm -rf /Applications/iTerm.app'
-
-  step 'macvim'
-  puts
-  puts 'Run this to uninstall MacVim:'
-  puts
-  puts '  rm -rf /Applications/MacVim.app'
 end
 
 task :default => :install
