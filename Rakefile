@@ -124,7 +124,7 @@ def install_deps
   # neovim
   `brew install neovim`
   # xsel needed for neovim
-  `sudo apt install xsel`
+  `sudo apt install xsel silversearcher-ag`
 end
 task :install do
   # TODO install gem ctags?
