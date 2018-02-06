@@ -163,8 +163,8 @@ set hidden
 let g:LanguageClient_serverCommands = {
     \ 'rust': ['rustup', 'run', 'nightly', 'rls'],
     \ 'javascript': ['javascript-typescript-stdio'],
+    \ 'cpp': ['cquery', '--language-server', '--log-file=/tmp/cq.log'],
     \ 'c': ['cquery', '--language-server', '--log-file=/tmp/cq.log'],
-    \ 'cxx': ['cquery', '--language-server', '--log-file=/tmp/cq.log'],
     \ }
 
 " \'go': ['go-langserver'],

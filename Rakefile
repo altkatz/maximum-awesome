@@ -119,9 +119,17 @@ LINKED_FILES = filemap(
 
 #ln -s ~/.vim/autoload ~/.local/share/nvim/site
 desc 'Install these config files.'
+def install_deps
+  # install rg
+  # neovim
+  `brew install neovim`
+  # xsel needed for neovim
+  `sudo apt install xsel`
+end
 task :install do
   # TODO install gem ctags?
   # TODO run gem ctags?
+  install_deps
   DIRS_UNDER_HOME.each do |dir|
     FileUtils.mkdir_p(File.expand_path(dir))
   end
