@@ -122,9 +122,18 @@ desc 'Install these config files.'
 def install_deps
   # install rg
   # neovim
-  `brew install neovim`
-  # xsel needed for neovim
-  `sudo apt install xsel silversearcher-ag`
+  platform = RUBY_PLATFORM
+  if platform.include?("darwin")
+    `brew install neovim`
+    `brew install pyenv`
+  elsif platform.include?("linux")
+    `sudo apt install xsel silversearcher-ag`
+    `curl -L https://github.com/pyenv/pyenv-installer/raw/master/bin/pyenv-installer | bash`
+  end
+  #https://github.com/tweekmonster/nvim-python-doctor/wiki/Advanced:-Using-pyenv
+  `pyenv install 3.4.4`
+  `pyenv virtualenv 3.4.4 neovim3 && pyenv activate neovim3 && pip install neovim`
+  `pyenv activate neovim3 && echo "let g:python3_host_prog = '$(pyenv which python)'" > ~/.vimrc.local`
 end
 task :install do
   # TODO install gem ctags?
